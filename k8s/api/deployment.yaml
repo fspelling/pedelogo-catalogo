@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-pedelogo
+spec:
+  selector:
+    matchLabels:
+      app: api-pedelogo
+  template:
+    metadata:
+      labels:
+        app: api-pedelogo
+    spec:
+      containers:
+      - name: api-pedelogo-container
+        image: fspelling/api-produto:latest
+        ports:
+        - name: http
+          containerPort: 80
+        env:
+          - name: Mongo_Host
+            value: mongo-service
+          - name: Mongo_User
+            value: mongodbuser
+          - name: Mongo_Password
+            value: mongodbpwd
+          - name: Mongo_Port
+            value: "27017"
+          - name: Mongo_DataBase
+            value: admin
