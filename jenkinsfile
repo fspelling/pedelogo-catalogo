@@ -31,7 +31,7 @@ pipeline {
         stage('Deploy k8s') {
             agent {
                 kubernetes {
-                    cloud 'kubernetes'
+                    cloud 'Cluster_K8s'
                 }
             }
             steps {
@@ -45,4 +45,5 @@ pipeline {
     }
 
 }
+
 
