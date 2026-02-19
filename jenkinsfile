@@ -29,11 +29,6 @@ pipeline {
         }
 
         stage('Deploy k8s') {
-            agent {
-                kubernetes {
-                    cloud 'Cluster_K8s'
-                }
-            }
             steps {
                 script {
                     sh "sed -i 's/{{tag}}/${env.BUILD_ID}/g' ./k8s/api/deployment.yaml"
@@ -46,6 +41,7 @@ pipeline {
     }
 
 }
+
 
 
 
