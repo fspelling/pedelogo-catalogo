@@ -1,101 +1,48 @@
 pipeline {
-    agent {
-        kubernetes {
-            cloud 'Cluster_K8s'
-            defaultContainer 'jnlp'
-            yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-
-  - name: docker
-    image: docker:25.0.3
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run/docker.sock
-
-  - name: kubectl
-    image: bitnami/kubectl:latest
-    command:
-    - cat
-    tty: true
-
-  volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
-"""
-        }
-    }
-
-    environment {
-        REGISTRY = "docker.io"
-        IMAGE_NAME = "fspelling/pedelogo-catalogo"
-        IMAGE_TAG = "${BUILD_ID}"
-    }
+    agent any
 
     stages {
-
-        stage('Checkout') {
+       stage('Checkout projeto') {
             steps {
-                checkout scm
+                git url:'https://github.com/fspelling/pedelogo-catalogo',
+                branch: 'main'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build image') {
             steps {
-                container('docker') {
-                    sh """
-                        docker build -t ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} .
-                    """
+                script {
+                    dockerapp = docker.build("fspelling/api-produto:${env.BUILD_ID}", "-f ./src/PedeLogo.Catalogo.Api/Dockerfile .")
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push image') {
             steps {
-                container('docker') {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-
-                        sh """
-                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                            docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                        """
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
+                        dockerapp.push('latest')
+                        dockerapp.push("${env.BUILD_ID}")
                     }
                 }
             }
         }
 
-        stage('Deploy Kubernetes') {
+        stage('Deploy k8s') {
+            agent {
+                kubernetes {
+                    cloud 'Cluster_K8s'
+                }
+            }
             steps {
-                container('kubectl') {
-                    script {
-                        sh "sed -i 's/{{tag}}/${IMAGE_TAG}/g' ./k8s/api/deployment.yaml"
-
-                        withKubeConfig([credentialsId: 'kubeconfig']) {
-                            sh "kubectl apply -f ./k8s/api/"
-                        }
+                script {
+                    sh "sed -i 's/{{tag}}/${env.BUILD_ID}/g' ./k8s/api/deployment.yaml"
+                    withKubeConfig([credentialsId: 'kubeconfig']) {
+                        sh "kubectl apply -f ./k8s/api/"
                     }
                 }
             }
         }
     }
 
-    post {
-        success {
-            echo "Deploy realizado com sucesso 🚀"
-        }
-        failure {
-            echo "Pipeline falhou ❌"
-        }
-    }
 }
-
