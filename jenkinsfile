@@ -12,7 +12,8 @@ pipeline {
         stage('Build image') {
             steps {
                 script {
-                    dockerapp = docker.build('fspelling/api-produto:${env.BUILD_ID}', '-f ./src/PedeLogo.Catalogo.Api/Dockerfile .')
+                    def tag = env.BUILD_ID
+                    dockerapp = docker.build("fspelling/api-produto:${tag}", "-f ./src/PedeLogo.Catalogo.Api/Dockerfile .")
                 }
             }
         }
@@ -22,7 +23,7 @@ pipeline {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
                         dockerapp.push('latest')
-                        dockerapp.push('${env.BUILD_ID}')
+                        dockerapp.push("${tag}")
                     }
                 }
             }
@@ -43,4 +44,5 @@ pipeline {
             }
         }
     }
+
 }
