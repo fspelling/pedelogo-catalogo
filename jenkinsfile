@@ -30,6 +30,11 @@ pipeline {
 
         stage('Deploy k8s') {
             steps {
+                agent {
+                    kubernetes {
+                        cloud 'Cluster_K8s'
+                    }
+                }
                 script {
                     sh "sed -i 's/{{tag}}/${env.BUILD_ID}/g' ./k8s/api/deployment.yaml"
                     withKubeConfig([credentialsId: 'kubeconfig']) {
