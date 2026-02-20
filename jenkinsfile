@@ -38,7 +38,9 @@ pipeline {
                 script {
                     sh "sed -i 's/{{tag}}/${env.BUILD_ID}/g' ./k8s/api/deployment.yaml"
                     withKubeConfig([credentialsId: 'kubeconfig']) {
-                        sh "kubectl apply -f ./k8s/api/"
+                        container('kubectl') {
+                            sh 'kubectl apply -f ./k8s/api/'
+                        }
                     }
                 }
             }
@@ -46,3 +48,4 @@ pipeline {
     }
 
 }
+
